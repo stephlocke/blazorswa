@@ -5,3 +5,88 @@
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+@inject HttpClient HttpClient
+
+
+@if (sites == null)
+{
+    <p>Loading...</p>
+}
+else if (sites.Count == 0)
+{
+    <p>No sites found.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Capacity</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var site in sites)
+            {
+                <tr>
+                    <td>@site.Name</td>
+                    <td>@site.Location</td>
+                    <td>@site.Capacity</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Site> sites;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var query = @"
+            query {
+                sites {
+                    id
+                    tenantId
+                    name
+                    location
+                    capacity
+                }
+            }
+        ";
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/data-api/graphql");
+        request.Content = new StringContent(query, System.Text.Encoding.UTF8, "application/json");
+
+        var response = await HttpClient.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            var data = System.Text.Json.JsonDocument.Parse(json).RootElement.GetProperty("data");
+            var siteArray = data.GetProperty("sites").EnumerateArray();
+
+            sites = new List<Site>();
+
+            foreach (var siteElement in siteArray)
+            {
+                var site = new Site
+                {
+                    Name = siteElement.GetProperty("name").GetString(),
+                    Location = siteElement.GetProperty("location").GetString(),
+                    Capacity = siteElement.GetProperty("capacity").GetInt32()
+                };
+
+                sites.Add(site);
+            }
+        }
+    }
+
+    private class Site
+    {
+        public string Name { get; set; }
+        public string Location { get; set; }
+        public int Capacity { get; set; }
+    }
+}
