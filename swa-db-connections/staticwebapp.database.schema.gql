@@ -12,7 +12,7 @@ type Book @model {
 """
 type Site @model {
   id: ID!
-  tenantId: String!
+  TenantId: String!
   name: String!
   location: String!
   capacity: String
