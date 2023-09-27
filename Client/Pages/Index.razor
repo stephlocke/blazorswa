@@ -45,13 +45,15 @@ else
     protected override async Task OnInitializedAsync()
     {
         var query = @"
-            query {
+            query Sites {
                 sites {
-                    id
-                    TenantId
-                    name
-                    location
-                    capacity
+                    item {
+                        id
+                        TenantId
+                        name
+                        location
+                        capacity
+                    }
                 }
             }
         ";
@@ -65,7 +67,7 @@ else
         {
             var json = await response.Content.ReadAsStringAsync();
             var data = System.Text.Json.JsonDocument.Parse(json).RootElement.GetProperty("data");
-            var siteArray = data.GetProperty("sites").EnumerateArray();
+            var siteArray = data.GetProperty("sites").GetProperty("items").EnumerateArray();
 
             sites = new List<Site>();
 
