@@ -31,7 +31,7 @@
   },
   "entities": {
     "Site": {
-      "source": "core",
+      "source": "sites",
       "graphql": true,
       "permissions": [
         {
