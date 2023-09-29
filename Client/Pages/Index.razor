@@ -1,18 +1,22 @@
 ﻿@page "/"
+@using System.Net.Http.Headers
+@using BlazorBasic.Domain.ApiClient
+@using BlazorBasic.Domain.ApiClient.Sites
 
 <PageTitle>Index</PageTitle>
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
-@inject HttpClient HttpClient
+@*@inject HttpClient HttpClient*@
+@inject ApiClient apiClient
 
 
 @if (sites == null)
 {
     <p>Loading...</p>
 }
-else if (sites.Count == 0)
+else if (!sites.Any())
 {
     <p>No sites found.</p>
 }
@@ -22,17 +26,17 @@ else
         <thead>
             <tr>
                 <th>Name</th>
-                <th>Location</th>
-                <th>Capacity</th>
+                <th>Tenant ID</th>
+                <th>Id</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var site in sites)
             {
                 <tr>
-                    <td>@site.Name</td>
-                    <td>@site.Location</td>
-                    <td>@site.Capacity</td>
+                    <td>@site.name</td>
+                    <td>@site.TenantId</td>
+                    <td>@site.id</td>
                 </tr>
             }
         </tbody>
@@ -40,14 +44,16 @@ else
 }
 
 @code {
-    private List<Site> sites;
+    private IEnumerable<Site> sites;
 
     protected override async Task OnInitializedAsync()
     {
+        sites = await this.apiClient.GetSites();
+        @*
         var query = @"
             query Sites {
                 sites {
-                    item {
+                    items {
                         id
                         TenantId
                         name
@@ -58,37 +64,48 @@ else
             }
         ";
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "/data-api/graphql");
+        var uri = new Uri("https://ashy-ground-027a9da03.3.azurestaticapps.net/data-api/graphql", UriKind.Absolute);
+        var request = new HttpRequestMessage(HttpMethod.Post, uri);
         request.Content = new StringContent(query, System.Text.Encoding.UTF8, "application/json");
-
-        var response = await HttpClient.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
+        
+        try
         {
-            var json = await response.Content.ReadAsStringAsync();
-            var data = System.Text.Json.JsonDocument.Parse(json).RootElement.GetProperty("data");
-            var siteArray = data.GetProperty("sites").GetProperty("items").EnumerateArray();
+            var response = await HttpClient.SendAsync(request);
 
-            sites = new List<Site>();
-
-            foreach (var siteElement in siteArray)
+            if (response.IsSuccessStatusCode)
             {
-                var site = new Site
-                {
-                    Name = siteElement.GetProperty("name").GetString(),
-                    Location = siteElement.GetProperty("location").GetString(),
-                    Capacity = siteElement.GetProperty("capacity").GetInt32()
-                };
+                var json = await response.Content.ReadAsStringAsync();
+                var parsedJson = System.Text.Json.JsonDocument.Parse(json);
+                var data = parsedJson.RootElement.GetProperty("data");
+                var siteArray = data.GetProperty("sites").GetProperty("items").EnumerateArray();
 
-                sites.Add(site);
+                sites = new List<Site>();
+
+                foreach (var siteElement in siteArray)
+                {
+                    var site = new Site
+                                   {
+                                       Name = siteElement.GetProperty("name").GetString(),
+                                       Location = siteElement.GetProperty("location").GetString(),
+                                       Capacity = siteElement.GetProperty("capacity").GetInt32()
+                                   };
+
+                    sites.Add(site);
+                }
             }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        *@
     }
 
-    private class Site
+        @*private class Site
     {
         public string Name { get; set; }
         public string Location { get; set; }
         public int Capacity { get; set; }
     }
+    *@
 }
