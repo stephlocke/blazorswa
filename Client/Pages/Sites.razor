@@ -1,15 +1,19 @@
 @page "/sites"
 
-@inject HttpClient HttpClient
+@using BlazorBasic.Domain.ApiClient
+@using BlazorBasic.Domain.ApiClient.Sites
+@inject ApiClient apiClient
 
 <PageTitle>Manufacturing Sites</PageTitle>
 <h1>Manufacturing Sites</h1>
 
+
+The following sites are available:
 @if (sites == null)
 {
     <p>Loading...</p>
 }
-else if (sites.Count == 0)
+else if (!sites.Any())
 {
     <p>No sites found.</p>
 }
@@ -19,17 +23,17 @@ else
         <thead>
             <tr>
                 <th>Name</th>
-                <th>Location</th>
-                <th>Capacity</th>
+                <th>Tenant ID</th>
+                <th>Id</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var site in sites)
             {
                 <tr>
-                    <td>@site.Name</td>
-                    <td>@site.Location</td>
-                    <td>@site.Capacity</td>
+                    <td>@site.name</td>
+                    <td>@site.TenantId</td>
+                    <td>@site.id</td>
                 </tr>
             }
         </tbody>
@@ -37,53 +41,10 @@ else
 }
 
 @code {
-    private List<Site> sites;
+    private IEnumerable<Site> sites;
 
     protected override async Task OnInitializedAsync()
     {
-        var query = @"
-            query {
-                sites {
-                    id
-                    tenantId
-                    name
-                    location
-                    capacity
-                }
-            }
-        ";
-
-        var request = new HttpRequestMessage(HttpMethod.Post, "data-api/graphql");
-        request.Content = new StringContent(query, System.Text.Encoding.UTF8, "application/json");
-
-        var response = await HttpClient.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
-        {
-            var json = await response.Content.ReadAsStringAsync();
-            var data = System.Text.Json.JsonDocument.Parse(json).RootElement.GetProperty("data");
-            var siteArray = data.GetProperty("sites").EnumerateArray();
-
-            sites = new List<Site>();
-
-            foreach (var siteElement in siteArray)
-            {
-                var site = new Site
-                {
-                    Name = siteElement.GetProperty("name").GetString(),
-                    Location = siteElement.GetProperty("location").GetString(),
-                    Capacity = siteElement.GetProperty("capacity").GetInt32()
-                };
-
-                sites.Add(site);
-            }
-        }
-    }
-
-    private class Site
-    {
-        public string Name { get; set; }
-        public string Location { get; set; }
-        public int Capacity { get; set; }
+        sites = await this.apiClient.GetSites();
     }
 }

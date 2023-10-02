@@ -1,49 +1,6 @@
 ﻿@page "/"
-@using BlazorBasic.Domain.ApiClient
-@using BlazorBasic.Domain.ApiClient.Sites
-@inject ApiClient apiClient
+
 
 <PageTitle>Home</PageTitle>
 
 <h1>Welcome!</h1>
-
-The following sites are available:
-@if (sites == null)
-{
-    <p>Loading...</p>
-}
-else if (!sites.Any())
-{
-    <p>No sites found.</p>
-}
-else
-{
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Tenant ID</th>
-                <th>Id</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var site in sites)
-            {
-                <tr>
-                    <td>@site.name</td>
-                    <td>@site.TenantId</td>
-                    <td>@site.id</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-
-@code {
-    private IEnumerable<Site> sites;
-
-    protected override async Task OnInitializedAsync()
-    {
-        sites = await this.apiClient.GetSites();
-    }
-}
